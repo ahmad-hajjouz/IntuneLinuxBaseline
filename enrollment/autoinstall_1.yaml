@@ -206,12 +206,15 @@ autoinstall:
     - curtin in-target --target=/target -- pro config set apt_news=false
 
     # ── Install Microsoft Intune Portal + Edge ───────────────────────────────
-    # Note: Ubuntu 26.04 (Resolute Raccoon) uses the new Microsoft 2025 GPG key.
-    # The old microsoft.asc key is still served but Microsoft's official 26.04
-    # guidance is to use microsoft-2025.asc. See:
-    # https://learn.microsoft.com/en-us/entra/identity/devices/sso-linux
+    # Note: Ubuntu 26.04 (Resolute Raccoon) uses the new Microsoft 2025 GPG key
+    # for /ubuntu/26.04/prod, but the Microsoft Edge repo (/repos/edge) is
+    # still signed with the legacy Microsoft key (EB3E94ADBE1229CF).
+    # We import BOTH keys into the same keyring so apt can verify both repos.
+    # See: https://learn.microsoft.com/en-us/entra/identity/devices/sso-linux
     - curtin in-target --target=/target -- mkdir -p /tmp/microsoft
-    - curtin in-target --target=/target -- sh -c 'curl -sSL https://packages.microsoft.com/keys/microsoft-2025.asc | gpg --dearmor > /tmp/microsoft/microsoft.gpg'
+    - curtin in-target --target=/target -- sh -c 'curl -sSL https://packages.microsoft.com/keys/microsoft-2025.asc | gpg --dearmor > /tmp/microsoft/microsoft-2025.gpg'
+    - curtin in-target --target=/target -- sh -c 'curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > /tmp/microsoft/microsoft-legacy.gpg'
+    - curtin in-target --target=/target -- sh -c 'cat /tmp/microsoft/microsoft-2025.gpg /tmp/microsoft/microsoft-legacy.gpg > /tmp/microsoft/microsoft.gpg'
     - curtin in-target --target=/target -- install -o root -g root -m 644 /tmp/microsoft/microsoft.gpg /usr/share/keyrings/microsoft.gpg
 
     # Microsoft prod repo for Ubuntu 26.04 (Resolute Raccoon)
