@@ -222,16 +222,19 @@ autoinstall:
 
     - curtin in-target --target=/target -- sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-edge.list'
 
-    - curtin in-target --target=/target -- apt-get update
-    - curtin in-target --target=/target -- apt-get install -y intune-portal microsoft-edge-stable
+    # apt-get wrapped with `timeout 300` so a stalled mirror or repo can't
+    # hang the installer indefinitely. If either command times out, the
+    # installer fails cleanly with a clear error rather than spinning forever.
+    - curtin in-target --target=/target -- timeout 300 apt-get update
+    - curtin in-target --target=/target -- timeout 300 apt-get install -y intune-portal microsoft-edge-stable
 
     - rm -f /target/etc/apt/sources.list.d/microsoft-edge-dev.list
     - rm -f /target/etc/apt/trusted.gpg.d/microsoft.gpg
     - curtin in-target --target=/target -- rm -rf /tmp/microsoft
 
     # Remove bloatware
-    - curtin in-target --target=/target -- apt-get purge -y libreoffice* remmina* transmission*
+    - curtin in-target --target=/target -- timeout 300 apt-get purge -y libreoffice* remmina* transmission*
 
     # Clean up
-    - curtin in-target --target=/target -- apt-get autoremove -y
+    - curtin in-target --target=/target -- timeout 300 apt-get autoremove -y
     - curtin in-target --target=/target -- apt-get clean
